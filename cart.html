@@ -1,0 +1,216 @@
+<html>
+  <head>
+    <meta charset="utf8" />
+    <style>
+      .active {
+        font-size: 30px;
+        background-color: burlywood;
+      }
+      .image {
+        height: 100px;
+      }
+      .overlay {
+        position: fixed;;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        opacity: 0.7;
+        top: 0;
+        left: 0;
+        display: none;
+      }
+      .modal {
+        background-color: beige;
+        width: 400px;
+        height: 400px;
+        position: fixed;
+        left: calc(50% - 200px);
+        top: calc(50% - 200px);
+        display: none;
+      }
+      .close {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="template" style="display: none;">
+      <li>
+        <div>
+            <img class="image" src="">
+            <span class="name"></span> <span class="price"></span><button>Купить</button>
+        </div>
+      </li>
+    </div>
+    <div id="tmplCartItem" style="display: none;">
+      <div>
+        <div><img class="image" src=""></div>
+        <div class="name"></div>
+        <div class="price"></div>
+        <div class="quantity"></div>
+        <button>X</button>
+      </div>
+    </div>
+    <div id="cart"></div>
+    <button id="clear" style="display: none;">Очистить корзину</button>
+    <ul id="catalog"></ul>
+    <div class="overlay" id="overlay"></div>
+    <div id="modal" class="modal">
+      <div class="close" id="close">X</div>
+      <img id="modalImage" src="">
+    </div>
+    <script>
+
+      var products = [
+        {
+          name: 'iPhone',
+          price: 70000,
+          cover: 'https://avatars.mds.yandex.net/get-pdb/38069/203472834-mercedes-benz-o-400-city-1466167354.53/s1200', 
+        },
+        {
+          name: 'Защитное стекло',
+          price: 1000,
+          cover: 'https://avatars.mds.yandex.net/get-pdb/245485/f8eebff0-f979-44ff-a0ad-0cabcdc0f45d/s1200',
+        }
+      ];
+    
+
+      var $catalog = document.getElementById('catalog');
+      $catalog.addEventListener('click', handleBuyClick);
+
+      function getIndex(name) {
+        var idx = -1;
+        for (var i = 0; i < cart.length; i++) {
+          if(cart[i].name === name) {
+            idx = i;
+          }
+        }
+
+        return idx;
+      }
+
+      function handleBuyClick(event) {
+        if (event.target.tagName === 'BUTTON') {  
+          var $product = event.target.parentElement;
+          var name = $product.querySelector('.name').textContent;
+          var image = $product.querySelector('.image').src;
+          var price = +$product.querySelector('.price').textContent;
+
+          var index = getIndex(name);
+          if(index === -1) {
+            // товара в корзине нет
+            cart.push({ name: name; price: price, quantity: 1, cover: image });
+          } else {
+            cart[index].quantity++;
+          }
+
+        buildTotal(cart);
+        }
+      }
+
+      var $template = document.getElementById('template');
+      function buildCatalog(products) {
+        for(var i = 0; i < products.length; i++) {
+          var $item = $template.children[0].cloneNode(true);
+          $item.querySelector('.name').textContent = products[i].name;
+          $item.querySelector('.price').textContent = products[i].price;
+          $item.querySelector('.image').src = products[i].cover;
+
+          $catalog.appendChild($item);
+        }
+      }
+
+      buildCatalog(products);
+
+      var cart = [];
+
+      var $cart = document.getElementById('cart');
+
+      $cart.addEventListener('click', handleRemoveClick);
+
+      var $clearButton = document.getElementById('clear');
+      $clearButton.addEventListener('click', handleClearClick);
+
+      function handleClearClick() {
+        cart = [];
+        buildTotal(cart);
+      }
+
+      var $tmplCartItem = document.getElementById('tmplCartItem');
+
+      function handleRemoveClick(event) {
+        if (event.target.tagName === 'BUTTON') {  
+          var $product = event.target.parentElement;
+          var name = $product.querySelector('.name').textContent;
+
+          var index = getIndex(name);
+          var product = cart[index];
+
+          if(product.quantity > 1) {
+            cart[index].quantity--;
+          } else {
+            if(confirm('Вы действительно хотите удалить товар из корзины?'))
+            cart.splice(index, 1);
+          }
+
+        buildTotal(cart);
+        }
+      }
+
+      function buildTotal(cart) {
+        var sum = 0;
+        var count = 0;
+        $cart.innerHTML = '';
+        for(var i = 0; i < cart.length; i++) {
+          sum = sum + cart[i].price * cart[i].quantity;
+          count = count + cart[i].quantity;
+
+          var $item = $tmplCartItem.children[0].cloneNode(true);
+          $item.querySelector('.name').textContent = cart[i].name;
+          $item.querySelector('.price').textContent = cart[i].price;
+          $item.querySelector('.quantity').textContent = cart[i].quantity;
+          $item.querySelector('.image').src = cart[i].cover;
+
+          $cart.appendChild($item);
+        }
+
+        
+        var $div = document.createElement('div');
+        if(cart.length === 0) {
+          $div.textContent = 'Корзина пуста';
+          $clearButton.style.display = 'none';
+        } else {
+          $clearButton.style.display = 'block';
+          $div.textContent = 'Общая сумма покупок: ' + sum + ' рублей. Количество единиц товара: ' + count + ' штук.';
+        }
+        $cart.appendChild($div);
+      }
+
+      buildTotal(cart);
+
+      var $modal = document.getElementById('modal');
+      var $overlay = document.getElementById('overlay');
+      var $close = document.getElementById('close');
+      var $modalImage = document.getElementById('modal');
+
+      document.body.addEventListener('click', handleImageClick);
+      $close.addEventListener('click', handleCloseClick);
+
+      function handleImageClick(event) {
+          if(event.target.classList.contains('image')) {
+          $modalImage.src = event.target.src;
+          $modal.style.display = 'block';
+          $overlay.style.display = 'block';
+          }
+
+        function handleCloseClick() {
+          $modal.style.display = 'none';
+          $overlay.style.display = 'none';
+        }
+      }
+    </script>
+  </body>
+</html>
